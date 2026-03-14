@@ -32,7 +32,6 @@ def find(frm, to, date_from, date_to):
 
     return result
 
-
 """
       finished tracking     
       
