@@ -3,11 +3,11 @@ import configparser
 config = configparser.ConfigParser()
 # full request is: frm, to, date_from, date_to (date format yyyy-mm-dd)
 while True:
+    config.read("settings.ini")
     mode = input("Choose mode: \n1. Add tracking \n2. Delete tracking \n3. Update tracking \n4. Exit\n")
     match mode:
         case "1":  # add
             # grab next index or set to 1
-            config.read("settings.ini")
             num = config.sections()
             if num:
                 num = str(int(num[-1]) + 1)
@@ -21,13 +21,32 @@ while True:
             config[num]["date_from"] = input("Enter starting date (in format yyyy-mm-dd): ")
             config[num]["date_to"] = input("Enter ending date (in format yyyy-mm-dd): ")
 
-            # save
-            with open('settings.ini', 'w') as configfile:
-                config.write(configfile)
-
         case "2":  # delete
-            pass
+            print("Entries in settings.ini:")
+            queries = config.sections()
+
+            if not queries:
+                print("No entries found, nothing to delete")
+                continue
+
+            for query in queries:
+                print(str(config[query])[9:], config[query]["frm"], config[query]["to"], config[query]["date_from"],
+                      config[query]["date_to"])
+
+            while True:
+                rm = input("Input the number of query you wish to remove, or 0 to cancel: ")
+                if rm.isdigit():
+                    break
+
+            if rm == "0":
+                continue
+
+            config.remove_section(rm)
+
         case "3":  # update
             pass
         case "4":  # exit
+            print("Exit")
             break
+    with open('settings.ini', 'w') as configfile:
+        config.write(configfile)
