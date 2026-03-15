@@ -3,19 +3,23 @@ import requests
 from openpyxl import load_workbook
 from openpyxl import Workbook
 import pathlib
+import configparser
 
 # get date for logs
 now = datetime.now()
 
-# path and excel setup
+# files setup
 path = pathlib.Path(__file__).parent.resolve()
+# excel
 excel_file = path.joinpath('flights.xlsx')
-
 try:
     wb = load_workbook(excel_file)
 except FileNotFoundError:
     wb = Workbook()
 ws = wb.active
+# config
+config = configparser.ConfigParser()
+config.read("settings.ini")
 
 
 # api request and formating
@@ -23,47 +27,28 @@ def find(frm, to, date_from, date_to):
     url: str = "https://services-api.ryanair.com/farfnd/3/oneWayFares?&departureAirportIataCode=" + frm + "&arrivalAirportIataCode=" + to + "&language=pl&limit=16&market=pl-pl&offset=0&outboundDepartureDateFrom=" + date_from + "&outboundDepartureDateTo=" + date_to
     response: requests.Response = requests.get(url)
     response: dict = response.json()
+    if response["total"] == 0:
+        print("No fligts found on query: " + frm + " "+ to + " " + date_from + " " + date_to)  # maybe add a log file later
 
-    flight_out_date = response["fares"][0]["outbound"]["departureDate"]
-    flight_in_date = response["fares"][0]["outbound"]["arrivalDate"]
-    cost = response["fares"][0]["summary"]["price"]["value"]
+        return -1
+    else:
+        flight_out_date = response["fares"][0]["outbound"]["departureDate"]
+        flight_in_date = response["fares"][0]["outbound"]["arrivalDate"]
+        cost = response["fares"][0]["summary"]["price"]["value"]
 
-    result = [now, flight_out_date, flight_in_date, frm, to, cost]
+        result = [now, flight_out_date, flight_in_date, frm, to, cost]
 
-    return result
+        return result
 
-"""
-      finished tracking     
-      
-modlin lisbona 11-28 07
-flight=find("WMI","LIS","2025-07-11","2025-07-28")
-ws.append(flight)
 
-modlin bari 11-28 10
-poznan lisbona 11-28 07
-flight=find("POZ","LIS","2025-07-11","2025-07-28")
-ws.append(flight)
-
-flight = find("WMI", "BRI", "2025-10-11", "2025-10-28")
-ws.append(flight)
-
-poznan bari 11-28 10
-flight = find("POZ", "BRI", "2025-10-11", "2026-10-28")
-ws.append(flight)
-
-modlin madryt 11-28 10
-flight = find("WMI", "MAD", "2026-10-11", "2026-10-28")
-ws.append(flight)
-
-modlin rzym 11-28 10
-flight = find("WMI", "CIA", "2026-10-11", "2026-10-28")
-ws.append(flight)
-"""
-
-#       currenty tracking      #
-# wrocław rome 11-28 10
-flight = find("WRO", "CIA", "2026-10-11", "2026-10-28")
-ws.append(flight)
+# tracking
+queries = config.sections()
+if not queries:
+    raise ValueError("No queries found, add using config")
+for query in queries:
+    flight = find(config[query]["frm"], config[query]["to"], config[query]["date_from"], config[query]["date_to"])
+    if flight != -1:
+        ws.append(flight)
 
 # save to worksheet
 wb.save(excel_file)
