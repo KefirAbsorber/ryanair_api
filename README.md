@@ -6,7 +6,7 @@ The data you collect can help track how the price changes, depending on the time
 From my test it's different for different airports and flights.  
 
 
-## Setup calrification 
+## Setup clarification 
 frm, and to are represented using **IATA airport codes**. 
 
 Example of a working section of ini file:  
